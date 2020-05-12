@@ -7,5 +7,12 @@ public class TimeHandler {
     private double hard=  1000;
 
 
+    public static double startTime = 0.0d;
+    public static double endTime = 0.0d;
 
+
+    public static void printTime() {
+        double elapsedTime = endTime - startTime;
+        System.out.println("elapsed time: " + elapsedTime);
+    }
 }

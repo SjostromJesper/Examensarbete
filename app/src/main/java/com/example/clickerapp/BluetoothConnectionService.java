@@ -205,7 +205,14 @@ public class BluetoothConnectionService {
                 try{
                     bytes = mmInStream.read(buffer);
                     String incomingMessage = new String(buffer, 0, bytes);
+
+                    //TODO fånga meddelandet här och använd det för något vettigare
                     Log.d(TAG, "InputStream: " + incomingMessage);
+
+                    if(incomingMessage.equalsIgnoreCase("stop")) {
+                        TimeHandler.endTime = System.currentTimeMillis();
+                        TimeHandler.printTime();
+                    }
                 }
                 catch(IOException e) {
                     Log.d(TAG, "write: error reading input stream. " + e.getMessage());
