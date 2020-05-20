@@ -5,6 +5,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.le.BluetoothLeScanner;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +28,9 @@ import android.widget.Toast;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.UUID;
+
+import static android.bluetooth.BluetoothAdapter.STATE_CONNECTED;
+import static android.telecom.Connection.STATE_DISCONNECTED;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener, AdapterView.OnItemClickListener {
     private static final String TAG = "MainActivity";
@@ -66,11 +74,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
      * onClick-method used to activate bluetooth device discovery
      */
     public void discoverButton(View view) {
-        System.out.println("discoverButton: looking for unpaired devices");
+        Log.d(TAG, "discoverButton: looking for unpaired devices");
+
+
 
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
-            System.out.println("discoverButton: canceling discovery");
+            Log.d(TAG, "discoverButton: canceling discovery");
 
             checkBTPermissions();
 
@@ -122,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if (permissionCheck != 0) {
                 this.requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1001);
             } else {
-                System.out.println("checkBTPermissions: no need to check permissions. SDK version < LOLLIPOP");
+                Log.d(TAG, "checkBTPermissions: no need to check permissions. SDK version < LOLLIPOP");
             }
         }
     }
@@ -149,12 +159,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
      */
     @Override
     protected void onDestroy() {
-        System.out.println("onDestroy: called.");
+        Log.d(TAG, "onDestroy: called.");
         super.onDestroy();
         unregisterReceiver(mBroadCastReceiver1);
         unregisterReceiver(mBroadCastReceiver3);
         unregisterReceiver(mBroadCastReceiver4);
     }
+
+
 
 
     /**
@@ -194,15 +206,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         mBluetoothAdapter.cancelDiscovery();
 
-        System.out.println("onItemClick: you clicked on a device");
+        Log.d(TAG, "onItemClick: you clicked on a device");
         String deviceName = mBTDevices.get(position).getName();
         String deviceAddress = mBTDevices.get(position).getAddress();
 
-        System.out.println("onItemClick: devicename = " + deviceName);
-        System.out.println("onItemClick: devicename = " + deviceAddress);
+        Log.d(TAG, "onItemClick: devicename = " + deviceName);
+        Log.d(TAG, "onItemClick: devicename = " + deviceAddress);
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            System.out.println("trying to pair with " + deviceName);
+            Log.d(TAG, "trying to pair with " + deviceName);
             mBTDevices.get(position).createBond();
 
             mBTDevice = mBTDevices.get(position);
@@ -229,13 +241,85 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         TimeHandler.startTime = System.currentTimeMillis();
     }
 
+
+
+
+    BluetoothGatt mBluetoothGatt;
+
     /**
      * onClick-method used to establish a connection between selected slave-device and this device
      * using the slave-device address and this device's UUID
      */
     public void startConnection(View view) {
+       // mBluetoothGatt = mBTDevice.connectGatt(this, false, mGattCallback);
         startBTConnection(mBTDevice, MY_UUID_INSECURE);
     }
+
+
+
+    // Implements callback methods for GATT events that the app cares about.  For example,
+    // connection change and services discovered.
+    private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            String intentAction;
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.d(TAG, "1");
+            }
+            else{
+                Log.d(TAG, "2");
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
+            System.out.println("10");
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+            System.out.println("11");
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+            System.out.println("12");
+        }
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * broadcaster for bluetooth state disabled/enabling/enabled/disabling
@@ -248,16 +332,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 switch (state) {
                     case BluetoothAdapter.STATE_OFF:
-                        System.out.println("onReceive: STATE OFF");
+                        Log.d(TAG, "onReceive: STATE OFF");
                         break;
                     case BluetoothAdapter.STATE_TURNING_OFF:
-                        System.out.println("onReceive: STATE TURNING OFF");
+                        Log.d(TAG, "onReceive: STATE TURNING OFF");
                         break;
                     case BluetoothAdapter.STATE_ON:
-                        System.out.println("onReceive: STATE ON");
+                        Log.d(TAG, "onReceive: STATE ON");
                         break;
                     case BluetoothAdapter.STATE_TURNING_ON:
-                        System.out.println("onReceive: STATE TURNING ON");
+                        Log.d(TAG, "onReceive: STATE TURNING ON");
                         break;
                 }
             }
@@ -296,21 +380,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            System.out.println("onReceive1: ACTION FOUND");
+            Log.d(TAG, "onReceive1: ACTION FOUND");
 
             if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
                 BluetoothDevice mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
                 if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
                     if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
-                        System.out.println("broadcastReceiver: BOND BONDED");
+                        Log.d(TAG, "broadcastReceiver: BOND BONDED");
                         mBTDevice = mDevice;
                     }
                     if (mDevice.getBondState() == BluetoothDevice.BOND_BONDING) {
-                        System.out.println("broadcastReceiver: BOND BONDING");
+                        Log.d(TAG, "broadcastReceiver: BOND BONDING");
                     }
                     if (mDevice.getBondState() == BluetoothDevice.BOND_NONE) {
-                        System.out.println("broadcastReceiver: BOND NONE");
+                        Log.d(TAG, "broadcastReceiver: BOND NONE");
                     }
                 }
             }
